@@ -37,7 +37,7 @@ sampctl package install Aiuraa/samp-user-lib
 Include in your code and begin using the library:
 
 ```pawn
-#include <samp-user-lib>
+#include <user-lib>
 ```
 
 ## Usage
