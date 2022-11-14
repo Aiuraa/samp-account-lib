@@ -181,7 +181,7 @@ stock Account_Login(playerid, password[])
 	}
 
 	#if !defined ACCOUNT_ALLOW_MULTI_USER
-	if (AccLib_g_sLoggedIn(playerid))
+	if (AccLib_g_sLoggedIn[playerid])
 	{
 		return 0;
 	}
