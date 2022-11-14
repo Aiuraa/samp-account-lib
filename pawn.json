@@ -1,0 +1,11 @@
+{
+	"user": "Aiuraa",
+	"repo": "samp-account-lib",
+	"tag": "0.0.1",
+	"include_path": "src",
+	"dependencies": [
+		"pawn-lang/samp-stdlib",
+		"Sreyas-Sreelal/samp-bcrypt:0.3.4",
+		"pBlueG/SA-MP-MySQL:R41-4"
+	]
+}
