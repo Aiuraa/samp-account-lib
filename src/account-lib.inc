@@ -13,6 +13,11 @@
 	#define IsNull(%0) ((%0[(%0[0])=='\1'])=='\0')
 #endif
 
+forward OnAccountChecked(playerid, bool:success);
+forward OnAccountRegister(playerid);
+forward OnAccountVerified(playerid, bool:success);
+forward OnAccountLogout(playerid);
+
 #if !defined MemSet
 // By Slice
 // http://forum.sa-mp.com/showthread.php?p=1606781
@@ -306,6 +311,9 @@ public __AccLib_OnHashPassword(playerid, hashid)
 
 	mysql_pquery(AccLib_g_sDbId, insertQuery);
 	CallLocalFunction("OnAccountRegister", "i", playerid);
+
+	// Refetch account for caching process
+	__AccLib_FetchAccount(playerid);
 	return 1;
 }
 
@@ -366,3 +374,4 @@ public OnPlayerDisconnect(playerid, reason)
 #if defined AccLib_OnPlayerConnect
 	forward AccLib_OnPlayerConnect(playerid);
 #endif
+
