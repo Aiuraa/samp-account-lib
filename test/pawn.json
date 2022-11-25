@@ -1,0 +1,18 @@
+{
+	"user": "Aiuraa",
+	"repo": "samp-account-lib-test",
+	"tag": "0.0.1",
+	"entry": "examples.pwn",
+    "output": "gamemodes/examples.amx",
+    "build": {
+        "includes": [
+            "../src/account-lib.inc"
+        ]
+    },
+	"dependencies": [
+		"pawn-lang/samp-stdlib",
+		"Sreyas-Sreelal/samp-bcrypt:0.3.4",
+		"pBlueG/SA-MP-MySQL:R41-4"
+	]
+}
+

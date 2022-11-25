@@ -1,5 +1,6 @@
 
 #include <a_samp>
+#include <account-lib>
 
 public OnGameModeInit()
 {
