@@ -1,6 +1,6 @@
-# samp-user-lib
+# SA:MP Account Lib
 
-[![sampctl](https://img.shields.io/badge/sampctl-samp--user--lib-2f2f2f.svg?style=for-the-badge)](https://github.com/Aiuraa/samp-user-lib)
+[![sampctl](https://img.shields.io/badge/sampctl-samp--user--lib-2f2f2f.svg?style=for-the-badge)](https://github.com/Aiuraa/samp-account-lib)
 
 A Library that handles user authentication internally without you reinventing the wheel (remaking it again and again) or without you ever touching any complicated mysql thingy again, very easy to use and i think it's newbie friendly.
 
@@ -13,13 +13,13 @@ Right this project is Work In Progress or you can call it as Development Phase, 
 Simply install to your project:
 
 ```bash
-sampctl package install Aiuraa/samp-user-lib
+sampctl package install Aiuraa/samp-account-lib
 ```
 
 Include in your code and begin using the library:
 
 ```pawn
-#include <user-lib>
+#include <account-lib>
 ```
 
 You might want to add some options before using the library, such as:
