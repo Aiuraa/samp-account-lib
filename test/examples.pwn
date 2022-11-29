@@ -1,6 +1,12 @@
-/* Example dialog are taken from: https://github.com/pBlueG/SA-MP-MySQL/tree/master/example_scripts */
+/* Example are taken from: https://github.com/pBlueG/SA-MP-MySQL/tree/master/example_scripts */
 
 #include <a_samp>
+
+// MySQL configuration
+#define		MYSQL_HOST 			"127.0.0.1"
+#define		MYSQL_USER 			"username"
+#define 	MYSQL_PASSWORD 		"password"
+#define		MYSQL_DATABASE 		"database"
 
 /* Comment this line to disable some features */
 #define ACCLIB_AUTO_FETCH_ACCOUNT
@@ -13,6 +19,7 @@
 #define MINIMUM_REQUIRED_PASSWORD   8
 
 static 
+	MySQL: g_SQL,
 	g_sPlayerLoginAttempts[MAX_PLAYERS];
 
 enum
@@ -25,8 +32,30 @@ enum
 
 public OnGameModeInit()
 {
-	printf("Account system by Aiura");
+	print("Connecting to MySQL service...");
+
+	new MySQLOpt: option_id = mysql_init_options();
+
+	mysql_set_option(option_id, AUTO_RECONNECT, true);
+
+	g_SQL = mysql_connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, option_id); 
+
+	if (g_SQL == MYSQL_INVALID_HANDLE || mysql_errno(g_SQL) != 0)
+	{
+		print("MySQL connection failed. Server is shutting down.");
+		SendRconCommand("exit");
+		return 1;
+	}
+	print("MySQL connection is successful.");
+
+	// Init the lib
+	AccLib_Init(g_SQL);
 	return 1;
+}
+
+main()
+{
+	printf("Account system by Aiura");
 }
 
 public OnAccountFetched(playerid, bool:success)
