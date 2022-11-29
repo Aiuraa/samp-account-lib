@@ -1,6 +1,6 @@
 /*
 	SA:MP Account Lib
-	Version: 0.1.0
+	Version: 0.1.1
 	Author: Ebi/Aiura
 
 	Copyright (C) 2022  Ebi/Aiura
@@ -361,7 +361,7 @@ static accLib_IsValidHandle__(MySQL:db)
 
 static accLib_ClearData__(playerid)
 {
-	new ORM:instance = AccLib_g_sAccountName[playerid];
+	new ORM:instance = AccLib_g_sAccountInstance[playerid];
 
 	orm_delvar(instance, "id");
 	orm_delvar(instance, "name");
