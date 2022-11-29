@@ -2,29 +2,11 @@
 
 [![sampctl](https://img.shields.io/badge/sampctl-samp--user--lib-2f2f2f.svg?style=for-the-badge)](https://github.com/Aiuraa/samp-user-lib)
 
-<!--
-Short description of your library, why it's useful, some examples, pictures or
-videos. Link to your forum release thread too.
+A Library that handles user authentication internally without you reinventing the wheel (remaking it again and again) or without you ever touching any complicated mysql thingy again, very easy to use and i think it's newbie friendly.
 
-Remember: You can use "forumfmt" to convert this readme to forum BBCode!
+The autentication uses BCrypt for storing or checking user password, it means user password would be safer to save and hard to crack too!. The password was never actually stored in memory, only when it's used **once** and then the memory will be gone afterwards.
 
-What the sections below should be used for:
-
-`## Installation`: Leave this section un-edited unless you have some specific
-additional installation procedure.
-
-`## Testing`: Whether your library is tested with a simple `main()` and `print`,
-unit-tested, or demonstrated via prompting the player to connect, you should
-include some basic information for users to try out your code in some way.
-
-And finally, maintaining your version number`:
-
-* Follow [Semantic Versioning](https://semver.org/)
-* When you release a new version, update `VERSION` and `git tag` it
-* Versioning is important for sampctl to use the version control features
-
-Happy Pawning!
--->
+Right this project is Work In Progress or you can call it as Development Phase, meaning it will be **NOT STABLE** to use, since i just throws bunch of ideas in here but never actually tested it since i need to complete the basecode in order to start testing.
 
 ## Installation
 
@@ -40,6 +22,13 @@ Include in your code and begin using the library:
 #include <user-lib>
 ```
 
+You might want to add some options before using the library, such as:
+```pawn
+#define ACCLIB_AUTO_FETCH_ACCOUNT
+#define ACCLIB_AUTO_KICK_ON_ERROR
+#define ACCLIB_ALLOW_MULTI_USER
+```
+
 ## Usage
 
 <!--
@@ -48,6 +37,28 @@ the source code, direct users there. If not, list your API and describe it well
 in this section. If your library is passive and has no API, simply omit this
 section.
 -->
+
+Coming Soon
+
+## TODO
+
+Before releasing this project, there is a list that i need to implement before can call it "stable".
+Right now the project is in development progress, i've spend my time to write this for myself or maybe for others too!
+
+Feel free to contribute if you can.
+
+- [ ] Core component
+  - [x] Data fetching
+  - [x] Authentication
+  - [x] Register
+  - [x] Login Sessions
+  - [ ] Get/Set Account Data
+
+- [ ] Utils 
+  - [ ] Logging System (partial complete)
+  - [ ] Documentation (partial complete)
+  - [x] Auto fetch/kick player
+  - [x] Example Code
 
 ## Testing
 
