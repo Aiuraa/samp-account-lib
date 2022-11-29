@@ -1,98 +1,120 @@
+/* Example dialog are taken from: https://github.com/pBlueG/SA-MP-MySQL/tree/master/example_scripts */
 
 #include <a_samp>
+
+/* Comment this line to disable some features */
+#define ACCLIB_AUTO_FETCH_ACCOUNT
+#define ACCLIB_AUTO_KICK_ON_ERROR
+#define ACCLIB_ALLOW_MULTI_USER
+
 #include <account-lib>
+
+static 
+    g_sPlayerLoginAttempts[MAX_PLAYERS];
+
+enum
+{
+    DIALOG_UNUSED,
+
+    DIALOG_LOGIN,
+    DIALOG_REGISTER
+};
 
 public OnGameModeInit()
 {
     printf("Account system by Aiura");
+    return 1;
 }
 
-public OnAccountChecked(playerid, bool:success)
+public OnAccountFetched(playerid, bool:success)
 {
-    if (!success)
+    if (success)
     {
-        ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login System", "Please put password below to login", "Login", "Quit");
+        format(string, sizeof string, "This account (%s) is registered. Please login by entering your password in the field below:", Player[playerid][Name]);
+        ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login", string, "Login", "Abort");
     }
     else
     {
-        ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD, "Register System", "Please put password below to register your account", "Login", "Quit");
+        format(string, sizeof string, "Welcome %s, you can register by entering your password in the field below:", Player[playerid][Name]);
+        ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD, "Registration", string, "Register", "Abort");
     }
-
     return 1;
 }
 
-public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
+public OnDialogResponse(playerid, dialogid, response, listitem, string:inputtext[])
 {
-    if (dialogid == DIALOG_LOGIN)
+    switch (dialogid)
     {
-        if (!response)
+        case DIALOG_LOGIN: 
         {
-            return 0;
-        }
+            if (IsNull(inputtext))
+            {
+                if (++ g_sPlayerLoginAttempts[playerid] >= MAX_WRONG_PASSWORD)
+                {
+                    ShowPlayerDialog(playerid, DIALOG_UNUSED, DIALOG_STYLE_MSGBOX, "Login", "You have mistyped your password too often (3 times).", "Okay", "");
+                    DelayedKick(playerid);
+                }
+                else
+                {
+                    ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login", "Invalid password specified!\nPlease enter your password in the field below:", "Login", "Abort");
+                }
+                return 1;
+            }
 
-        if (IsNull(inputtext))
-        {
-            SendClientMessage(playerid, 0xFF0000, "Error: {FFFFFF}Invalid password specified");
-        }
-        else if (strlen(inputtext) < 6)
-        {
-            SendClientMessage(playerid, 0xFF0000, "Error: {FFFFFF}Password must contain more than 6 characters");
-        }
-        else if (!Account_Login(playerid, inputtext))
-        {
-            SendClientMessage(playerid, 0xFF0000, "Error: {FFFFFF}The accounts is currently logged-in, if you think this is a mistake please contact administrator as soon as possible.");
-        }
-        else
-        {
-            return 1; // prevent showing the dialog.  
-        }
-
-        ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login System", "Please put password below to login", "Login", "Quit");
-        return 1;
-    }
-    else if (dialogid == DIALOG_REGISTER)
-    {
-        if (!response)
-        {
-            return 0;
-        }
-
-        if (IsNull(inputtext))
-        {
-            SendClientMessage(playerid, 0xFF0000, "Error: {FFFFFF}Invalid password specified");
-        }
-        else if (strlen(inputtext) < 6)
-        {
-            SendClientMessage(playerid, 0xFF0000, "Error: {FFFFFF}Password must contain more than 6 characters");
-        }
-        else
-        {
-            Account_Register(playerid, inputtext);
-            return 1; // prevent showing the dialog.  
-        }
-
-        ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD, "Register System", "Please put password below to register your account", "Login", "Quit");
-        return 1;
-    }
-}
-
-public OnAccountVerified(playerid, bool:success)
-{
-        if (success)
-        {
-            // Spawn here
-        }
-        else
-        {
-            SendClientMessage(playerid, 0xFF0000, "Something happens with internal code, please relogin and if it's not working contact our staff.");
-            Kick(playerid);
+            AccLib_LoginPlayer(playerid, inputtext);
             return 1;
         }
+        case DIALOG_REGISTER:
+        {
+            if (strlen(inputtext) <= MINIMUM_REQUIRED_PASSWORD)
+            {
+                ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD, "Registration", "Your password must be longer than "#MINIMUM_REQUIRED_PASSWORD" characters!\nPlease enter your password in the field below:", "Register", "Abort");
+                return 1;
+            }
+
+            AccLib_RegisterPlayer(playerid);
+            return 1;
+        }
+
+        default: return 0;
+    }
 }
 
-public OnPlayerRegister(playerid)
+public OnPlayerLogin(playerid, bool:success)
 {
-    SendClientMessage(playerid, -1, "Successfully registered to our server");
+    if (!success)
+    {
+        if (++ g_sPlayerLoginAttempts[playerid] >= MAX_WRONG_PASSWORD)
+        {
+            ShowPlayerDialog(playerid, DIALOG_UNUSED, DIALOG_STYLE_MSGBOX, "Login", "You have mistyped your password too often (3 times).", "Okay", "");
+            DelayedKick(playerid);
+        }
+        else
+        {
+            ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login", "Invalid password specified!\nPlease enter your password in the field below:", "Login", "Abort");
+        }
+    }
+    else
+    {
+        ShowPlayerDialog(playerid, DIALOG_UNUSED, DIALOG_STYLE_MSGBOX, "Login", "You have been successfully logged in.", "Okay", "");
+        
+        // Do something here like spawn, or idk.
+    }
     return 1;
 }
 
+forward _KickPlayerDelayed(playerid);
+public _KickPlayerDelayed(playerid)
+{
+    Kick(playerid);
+    return 1;
+}
+
+
+//-----------------------------------------------------
+
+DelayedKick(playerid, time = 500)
+{
+    SetTimerEx("_KickPlayerDelayed", time, false, "d", playerid);
+    return 1;
+}
