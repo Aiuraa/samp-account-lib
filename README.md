@@ -1,6 +1,6 @@
 # SA:MP Account Lib
 
-[![sampctl](https://img.shields.io/badge/sampctl-samp--user--lib-2f2f2f.svg?style=for-the-badge)](https://github.com/Aiuraa/samp-account-lib)
+[![sampctl](https://img.shields.io/badge/sampctl-samp--account--lib-2f2f2f.svg?style=for-the-badge)](https://github.com/Aiuraa/samp-account-lib)
 
 A Library that handles user authentication internally without you reinventing the wheel (remaking it again and again) or without you ever touching any complicated mysql thingy again, very easy to use and i think it's newbie friendly.
 
