@@ -1,7 +1,7 @@
 {
 	"user": "Aiuraa",
 	"repo": "samp-account-lib-test",
-	"tag": "0.0.1",
+	"tag": "0.0.3",
 	"entry": "examples.pwn",
     "output": "gamemodes/examples.amx",
     "build": {
