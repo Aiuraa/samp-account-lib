@@ -141,7 +141,6 @@ public OnAccountLogin(playerid, bool:success)
 	}
 	else
 	{
-		SendClientMessage(playerid, -1, "selamat loh udah login");
 		ShowPlayerDialog(playerid, DIALOG_UNUSED, DIALOG_STYLE_MSGBOX, "Login", "You have been successfully logged in.", "Okay", "");
 		// Do something here like spawn, or idk.
 	}
