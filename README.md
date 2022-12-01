@@ -22,11 +22,12 @@ Include in your code and begin using the library:
 #include <account-lib>
 ```
 
-You might want to add some options before using the library, such as:
+You might want to add some options before using the library in your script, such as:
 ```pawn
 #define ACCLIB_AUTO_FETCH_ACCOUNT
 #define ACCLIB_AUTO_KICK_ON_ERROR
 #define ACCLIB_ALLOW_MULTI_USER
+#define ACCLIB_DEBUG_MODE
 ```
 
 ## Usage
