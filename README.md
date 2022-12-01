@@ -6,8 +6,6 @@ A Library that handles user authentication internally without you reinventing th
 
 The autentication uses BCrypt for storing or checking user password, it means user password would be safer to save and hard to crack too!. The password was never actually stored in memory, only when it's used **once** and then the memory will be gone afterwards.
 
-Right this project is Work In Progress or you can call it as Development Phase, meaning it will be **NOT STABLE** to use, since i just throws bunch of ideas in here but never actually tested it since i need to complete the basecode in order to start testing.
-
 ## Installation
 
 Simply install to your project:
