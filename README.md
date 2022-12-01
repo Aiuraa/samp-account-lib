@@ -38,7 +38,7 @@ in this section. If your library is passive and has no API, simply omit this
 section.
 -->
 
-Coming Soon
+For now, you can refer to the [examples](test/examples.pwn) code.
 
 ## TODO
 
