@@ -52,6 +52,10 @@ forward OnAccountLogout(playerid);
 	#define MemSet memset
 #endif
 
+#if !defined IsNull
+	#define IsNull isnull
+#endif
+
 // From pawn-stdlib, for compatibility only.
 #if !defined strcopy
 stock strcopy(dest[], const source[], maxlength = sizeof (dest))
