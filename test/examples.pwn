@@ -3,8 +3,8 @@
 #include <a_samp>
 
 // MySQL configuration
-#define		MYSQL_HOST 			"127.0.0.1"
-#define		MYSQL_USER 			"username"
+#define		MYSQL_HOST 			"localhost"
+#define		MYSQL_USER 			"user"
 #define 	MYSQL_PASSWORD 		"password"
 #define		MYSQL_DATABASE 		"database"
 
@@ -12,6 +12,7 @@
 #define ACCLIB_AUTO_FETCH_ACCOUNT
 #define ACCLIB_AUTO_KICK_ON_ERROR
 #define ACCLIB_ALLOW_MULTI_USER
+#define ACCLIB_DEBUG_MODE
 
 #include <account-lib>
 
@@ -35,9 +36,7 @@ public OnGameModeInit()
 	print("Connecting to MySQL service...");
 
 	new MySQLOpt: option_id = mysql_init_options();
-
 	mysql_set_option(option_id, AUTO_RECONNECT, true);
-
 	g_SQL = mysql_connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, option_id); 
 
 	if (g_SQL == MYSQL_INVALID_HANDLE || mysql_errno(g_SQL) != 0)
@@ -49,7 +48,7 @@ public OnGameModeInit()
 	print("MySQL connection is successful.");
 
 	// Init the lib
-	AccLib_Init(g_SQL);
+	AccLib_Init(g_SQL, "accounts", "id", "name", "password");
 	return 1;
 }
 
@@ -58,17 +57,32 @@ main()
 	printf("Account system by Aiura");
 }
 
+public OnPlayerConnect(playerid)
+{
+	new hour, minute;
+	gettime(hour, minute, _);
+	SetPlayerTime(playerid, hour, minute);
+	TogglePlayerSpectating(playerid, true);
+	return 1;
+}
+
 public OnAccountFetched(playerid, bool:success)
 {
+	new 
+		string:szDialogFormat[128],
+		string:name[MAX_PLAYER_NAME + 1];
+
+	GetPlayerName(playerid, name, sizeof(name));
+
 	if (success)
 	{
-		format(string, sizeof string, "This account (%s) is registered. Please login by entering your password in the field below:", Player[playerid][Name]);
-		ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login", string, "Login", "Abort");
+		format(szDialogFormat, sizeof szDialogFormat, "This account (%s) is registered. Please login by entering your password in the field below:", name);
+		ShowPlayerDialog(playerid, DIALOG_LOGIN, DIALOG_STYLE_PASSWORD, "Login", szDialogFormat, "Login", "Abort");
 	}
 	else
 	{
-		format(string, sizeof string, "Welcome %s, you can register by entering your password in the field below:", Player[playerid][Name]);
-		ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD, "Registration", string, "Register", "Abort");
+		format(szDialogFormat, sizeof szDialogFormat, "Welcome %s, you can register by entering your password in the field below:", name);
+		ShowPlayerDialog(playerid, DIALOG_REGISTER, DIALOG_STYLE_PASSWORD, "Registration", szDialogFormat, "Register", "Abort");
 	}
 	return 1;
 }
@@ -94,7 +108,6 @@ public OnDialogResponse(playerid, dialogid, response, listitem, string:inputtext
 			}
 
 			AccLib_LoginPlayer(playerid, inputtext);
-			return 1;
 		}
 		case DIALOG_REGISTER:
 		{
@@ -104,15 +117,15 @@ public OnDialogResponse(playerid, dialogid, response, listitem, string:inputtext
 				return 1;
 			}
 
-			AccLib_RegisterPlayer(playerid);
-			return 1;
+			AccLib_RegisterPlayer(playerid, inputtext);
 		}
 
 		default: return 0;
 	}
+	return 1;
 }
 
-public OnPlayerLogin(playerid, bool:success)
+public OnAccountLogin(playerid, bool:success)
 {
 	if (!success)
 	{
@@ -128,8 +141,8 @@ public OnPlayerLogin(playerid, bool:success)
 	}
 	else
 	{
+		SendClientMessage(playerid, -1, "selamat loh udah login");
 		ShowPlayerDialog(playerid, DIALOG_UNUSED, DIALOG_STYLE_MSGBOX, "Login", "You have been successfully logged in.", "Okay", "");
-		
 		// Do something here like spawn, or idk.
 	}
 	return 1;
