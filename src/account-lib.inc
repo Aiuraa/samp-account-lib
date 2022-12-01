@@ -1,6 +1,6 @@
 /*
 	SA:MP Account Lib
-	Version: 0.1.2
+	Version: 1.0.0
 	Author: Ebi/Aiura
 
 	Copyright (C) 2022  Ebi/Aiura
@@ -29,77 +29,34 @@
 #include <a_mysql>
 #include <samp_bcrypt>
 
-#if !defined IsNull
-	#define IsNull(%0) ((%0[(%0[0])=='\1'])=='\0')
-#endif
+#include <YSI_Core\y_utils>
 
+// Simple logging system
 #if defined ACCLIB_DEBUG_MODE
-	#define accLib_LogDebug(%0 printf("[AccLib Debug]: "%0
+	#define accLib_LogDebug(%0) printf("[AccLib Debug]: "%0)
 #else
-	#define accLib_LogDebug(%0)
+	#define accLib_LogDebug(%0);
 #endif
 
-#define string: 
+#define accLib_LogWarning(%0) printf("[AccLib Warning]: "%0)
+#define accLib_LogError(%0) printf("[AccLib Error]: "%0)
 
-#define accLib_LogWarning(%0 printf("[AccLib Warning]: "%0
-#define accLib_LogError(%0 printf("[AccLib Error]: "%0
-
+// Public functions that you can use
 forward OnAccountFetched(playerid, bool:success);
 forward OnAccountLogin(playerid, bool:success);
 forward OnAccountRegister(playerid);
 forward OnAccountLogout(playerid);
 
+// For people who are using some ancient ysi i guess.
 #if !defined MemSet
-// By Slice
-// http://forum.sa-mp.com/showthread.php?p=1606781
-stock MemSet(aArray[], iValue, iSize = sizeof(aArray)) {
-	new iAddress;
+	#define MemSet memset
+#endif
 
-	#emit LOAD.S.pri 12
-	#emit STOR.S.pri iAddress
-
-	iSize *= 4;
-
-	while (iSize > 0) {
-		if (iSize >= 4096) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 4096
-			iSize -= 4096;
-			iAddress += 4096;
-		} else if (iSize >= 1024) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 1024
-			iSize -= 1024;
-			iAddress += 1024;
-		} else if (iSize >= 256) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 256
-			iSize -= 256;
-			iAddress += 256;
-		} else if (iSize >= 64) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 64
-			iSize -= 64;
-			iAddress += 64;
-		} else if (iSize >= 16) {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 16
-			iSize -= 16;
-			iAddress += 16;
-		} else {
-			#emit LOAD.S.alt iAddress
-			#emit LOAD.S.pri iValue
-			#emit FILL 4
-			iSize -= 4;
-			iAddress += 4;
-		}
-	}
-	#pragma unused aArray
+// From pawn-stdlib, for compatibility only.
+#if !defined strcopy
+stock strcopy(dest[], const source[], maxlength = sizeof (dest))
+{
+	return strcat((dest[0] = EOS, dest), source, maxlength);
 }
 #endif
 
@@ -114,7 +71,6 @@ static stock
 
 // We only need these for players
 static stock
-	ORM:accLib_g_sAccountInstance[MAX_PLAYERS],
 	accLib_g_sAccountMySQLId[MAX_PLAYERS],
 	string:accLib_g_sAccountName[MAX_PLAYERS][MAX_PLAYER_NAME],
 	string:accLib_g_sAccountPassword[MAX_PLAYERS][BCRYPT_HASH_LENGTH],
@@ -188,7 +144,7 @@ stock AccLib_Init(MySQL:db = MYSQL_DEFAULT_HANDLE, const string:table[] = "", co
 	if (IsNull(columnPassword))
 	{
 		accLib_LogWarning("Creating `name` column in `%s` tables since columnPassword arguments is empty.", accLib_g_sDbTable);
-		mysql_pquery(db, "ALTER TABLE accounts ADD COLUMN password BINARY(60) NOT NULL");
+		mysql_pquery(db, "ALTER TABLE accounts ADD COLUMN password VARCHAR(60) NOT NULL");
 		strcopy(accLib_g_sDbColumnPassword, "password");
 	}
 	else
@@ -206,75 +162,134 @@ stock AccLib_Init(MySQL:db = MYSQL_DEFAULT_HANDLE, const string:table[] = "", co
 stock AccLib_FetchAccount(playerid)
 {
 	accLib_LogDebug("Getting player %d name...", playerid);
-	GetPlayerName(playerid, accLib_g_sAccountName[playerid], MAX_PLAYER_NAME + 1);
-	accLib_LogDebug("Success, player %d name is \"%s\"", playerid, accLib_g_sAccountName[playerid]);
+	new name[MAX_PLAYER_NAME + 1];
+	GetPlayerName(playerid, name, MAX_PLAYER_NAME + 1);
+	accLib_LogDebug("Success, player %d name is \"%s\"", playerid, name);
 
-	accLib_LogDebug("Creating new ORM instances..");
-	new ORM:instance = accLib_g_sAccountInstance[playerid] = orm_create(accLib_g_sDbTable, accLib_g_sDbId);
+	strcopy(accLib_g_sAccountName[playerid], name, MAX_PLAYER_NAME + 1);
 
-	accLib_LogDebug("Linking table and rows to the ORM instances...");
-	orm_addvar_int(instance, accLib_g_sAccountMySQLId[playerid], accLib_g_sDbColumnId);
-	orm_addvar_string(instance, accLib_g_sAccountName[playerid], MAX_PLAYER_NAME + 1, accLib_g_sDbColumnName);
-	orm_addvar_string(instance, accLib_g_sAccountPassword[playerid], BCRYPT_HASH_LENGTH, accLib_g_sDbColumnPassword);
-
-	accLib_LogDebug("Setting key to `%s` for fetching data", accLib_g_sDbColumnName);
-	orm_setkey(instance, accLib_g_sDbColumnName);
+	accLib_LogDebug("Prepare to fetching accounts..");
+	new queryCheckFmt[128];
+	mysql_format(accLib_g_sDbId, queryCheckFmt, sizeof(queryCheckFmt), "SELECT %s, %s, %s FROM %s WHERE %s = '%e'",
+		accLib_g_sDbColumnId,
+		accLib_g_sDbColumnName,
+		accLib_g_sDbColumnPassword,
+		accLib_g_sDbTable,
+		accLib_g_sDbColumnName,
+		accLib_g_sAccountName[playerid]
+	);
 
 	accLib_LogDebug("Fetching accounts now!");
-	orm_load(instance, "accLib_AccountFetched__", "i", playerid);
+	mysql_tquery(accLib_g_sDbId, queryCheckFmt, "accLib_AccountFetched__", "i", playerid);
 	return 1;
 }
 
 stock bool:Account_Exists(playerid)
 {
-	return (IsPlayerConnected(playerid) && accLib_g_sAccountMySQLId[playerid] != 0);
+	new bool:ret = (IsPlayerConnected(playerid) && accLib_g_sAccountMySQLId[playerid] != 0);
+	accLib_LogDebug("Account_Exists(%d) fired, returns %d", playerid, _:ret);
+	return ret;
 }
 
 stock bool:Account_IsLoggedIn(playerid)
 {
-	return (Account_Exists(playerid) && accLib_g_sLoggedIn[playerid]);
+	new bool:ret = (Account_Exists(playerid) && accLib_g_sLoggedIn[playerid]);
+	accLib_LogDebug("Account_IsLoggedIn(%d) fired, returns %d", playerid, _:ret);
+	return ret;
 }
 
-stock AccLib_LoginPlayer(playerid, string:password[])
+stock AccLib_LoginPlayer(playerid, const string:password[])
 {
 	if (!Account_Exists(playerid))
 	{
+		accLib_LogDebug("AccLib_LoginPlayer called when user doesn't exists");
 		return 0;
 	}
 
 	#if !defined ACCLIB_ALLOW_MULTI_USER
 	if (accLib_g_sLoggedIn[playerid])
 	{
+		accLib_LogDebug("Player %s(%d) trying to request login that the accounts already been logged-in before", accLib_g_sAccountName[playerid], playerid);
 		return 0;
 	}
 	#endif
 
+	accLib_LogDebug("Verifying password for player %s(%d)...", accLib_g_sAccountName[playerid], playerid);
 	bcrypt_verify(playerid, "accLib_VerifyPassword__", password, accLib_g_sAccountPassword[playerid]);
-	MemSet(password, 0, strlen(password));
 	return 1;
 }
 
-stock AccLib_RegisterPlayer(playerid, string:password[])
+stock AccLib_RegisterPlayer(playerid, const string:password[])
 {
 	if (Account_Exists(playerid))
 	{
+		accLib_LogDebug("AccLib_RegisterPlayer called when user does exists");
 		return 0;
 	}
 
+	accLib_LogDebug("Hashing password for player %s(%d)...", accLib_g_sAccountName[playerid], playerid);
 	bcrypt_hash(playerid, "accLib_HashPassword__", password, BCRYPT_COST);
-	MemSet(password, 0, strlen(password));
 	return 1;
 }
 
 stock AccLib_LogoutPlayer(playerid)
 {
+	accLib_LogDebug("Clearing account data since player logout...");
 	accLib_ClearData__(playerid);
+
+	accLib_LogDebug("Calling \"OnAccountLogout\" callback...");
 	CallLocalFunction("OnAccountLogout", "i", playerid);
 
 	#if defined ACCLIB_AUTO_FETCH_ACCOUNT
 		// Refetch account for future login
+		accLib_LogDebug("Fetching account for future login.");
 		AccLib_FetchAccount(playerid);
 	#endif
+	return 1;
+}
+
+// Get & Set
+stock AccLib_GetAccountId(playerid)
+{
+	if (!Account_IsLoggedIn(playerid))
+	{
+		return INVALID_ACCOUNT_ID;
+	}
+	return (accLib_g_sAccountMySQLId[playerid]);
+}
+
+stock AccLib_GetAccountName(playerid, string:name[], len = sizeof(name))
+{
+	if (!Account_IsLoggedIn(playerid))
+	{
+		return 0;
+	}
+
+	strcopy(name, accLib_g_sAccountName[playerid], len);
+	return 1;
+}
+
+stock AccLib_SetAccountName(playerid, const string:name[])
+{
+	if (!Account_IsLoggedIn(playerid))
+	{
+		return 0;
+	}
+
+	strcopy(accLib_g_sAccountName[playerid], name, MAX_PLAYER_NAME + 1);
+	return 1;
+}
+
+stock AccLib_SetAccountPassword(playerid, const string:password[])
+{
+	if (!Account_IsLoggedIn(playerid))
+	{
+		accLib_LogDebug("AccLib_SetAccountPassword called when user not logged in");
+		return 0;
+	}
+
+	accLib_LogDebug("Hashing password for player %s(%d)...", accLib_g_sAccountName[playerid], playerid);
+	bcrypt_hash(playerid, "accLib_HashSetPassword__", password, BCRYPT_COST);
 	return 1;
 }
 
@@ -283,27 +298,41 @@ forward accLib_AccountFetched__(playerid);
 forward accLib_VerifyPassword__(playerid, bool:success);
 forward accLib_HashPassword__(playerid, hashid);
 forward accLib_FetchAfterInsert__(playerid);
+forward accLib_HashSetPassword__(playerid,hashid);
 
 public accLib_AccountFetched__(playerid)
 {
+	accLib_LogDebug("Preparing race check...");
 	new name[MAX_PLAYER_NAME + 1];
 	GetPlayerName(playerid, name, sizeof(name));
 
 	if (!strcmp(name, accLib_g_sAccountName[playerid], .length = MAX_PLAYER_NAME + 1))
 	{
+		accLib_LogDebug("Race check success! (%s == %s)", name, accLib_g_sAccountName[playerid]);
+		accLib_LogDebug("Checking if account fetched...");
+
 		new
-			ORM:instance = accLib_g_sAccountInstance[playerid],
-			success = (orm_errno(instance) == ERROR_OK) ? 1 : 0;
+			success = !!cache_num_rows();
+		
+		accLib_LogDebug("Success, the result is %d", success);
 
 		// set the key to id for faster query search (when needed)
-		orm_setkey(instance, accLib_g_sDbColumnId);
+		accLib_LogDebug("Store the results into the variable...");
+		cache_get_value_index_int(0, 0, accLib_g_sAccountMySQLId[playerid]);
+		cache_get_value_index(0, 1, accLib_g_sAccountName[playerid], MAX_PLAYER_NAME + 1);
+		cache_get_value_index(0, 2, accLib_g_sAccountPassword[playerid], BCRYPT_HASH_LENGTH);
+		
+		accLib_LogDebug("Unset the cache, since we don't need it");
+		cache_unset_active();
 
 		// call the real callback
+		accLib_LogDebug("Everything is done, we can safely call \"OnAccountFetched\" callback here");
 		CallLocalFunction(#OnAccountFetched, "ii", playerid, success);
 	}
 	else
 	{
 		#if defined ACCLIB_AUTO_KICK_ON_ERROR
+			accLib_LogDebug("Kicking player since the race check failed (%s != %s)", name, accLib_g_sAccountName[playerid]);
 			Kick(playerid);
 		#endif
 
@@ -314,34 +343,111 @@ public accLib_AccountFetched__(playerid)
 
 public accLib_VerifyPassword__(playerid, bool:success)
 {
+	accLib_LogDebug("Checking successful attempt to verify password...");
 	if (success)
 	{
+		accLib_LogDebug("Succeeded verifying password for player %s(%d)", accLib_g_sAccountName[playerid], playerid);
+
 		// remove everything related to password.
-		orm_delvar(accLib_g_sAccountName[playerid], "password");
 		MemSet(accLib_g_sAccountPassword[playerid], 0, BCRYPT_HASH_LENGTH);
 
 		// set logged in to true.
 		accLib_g_sLoggedIn[playerid] = true;
+		CallLocalFunction("OnAccountLogin", "ii", playerid, 1);
 	}
-	return CallLocalFunction("OnAccountLogin", "ii", playerid, _:success);
+	else
+	{
+		CallLocalFunction("OnAccountLogin", "ii", playerid, 0);
+	}
+	return 1;
 }
 
 public accLib_HashPassword__(playerid, hashid)
 {
+	accLib_LogDebug("Getting hash from previous results...");
 	new hash[BCRYPT_HASH_LENGTH];
 	bcrypt_get_hash(hash, sizeof(hash));
+	accLib_LogDebug("Done, the hash is `*********`");
 
-	new playerName[MAX_PLAYER_NAME + 1];
-	GetPlayerName(playerid, playerName, sizeof(playerName));
+	accLib_LogDebug("Preparing race check...");
+	new name[MAX_PLAYER_NAME + 1];
+	GetPlayerName(playerid, name, sizeof(name));
 
-	orm_save(accLib_g_sAccountInstance[playerid], "accLib_FetchAfterInsert__", "i", playerid);
+	if (!strcmp(name, accLib_g_sAccountName[playerid], .length = MAX_PLAYER_NAME + 1))
+	{
+		accLib_LogDebug("Race check success! (%s == %s)", name, accLib_g_sAccountName[playerid]);
+		accLib_LogDebug("Inserting the data to the database...");
+
+		new fmtInsert[255];
+		mysql_format(accLib_g_sDbId, fmtInsert, sizeof(fmtInsert), "INSERT INTO %e (%e, %e) VALUES ('%e', CAST('%e' AS BINARY))", 
+			accLib_g_sDbTable,
+			accLib_g_sDbColumnName,
+			accLib_g_sDbColumnPassword,
+			name,
+			hash
+		);
+		
+		accLib_LogDebug("Firing the query now!");
+		mysql_tquery(accLib_g_sDbId, fmtInsert, "accLib_FetchAfterInsert__", "i", playerid);
+	}
+	else
+	{
+		#if defined ACCLIB_AUTO_KICK_ON_ERROR
+			Kick(playerid);
+		#endif
+
+		accLib_LogError("Player %s(%d) race check invalid (%s != %s)", name, playerid, name, accLib_g_sAccountName[playerid]);
+	}
 	return 1;
 }
 
 public accLib_FetchAfterInsert__(playerid)
 {
+	accLib_LogDebug("Clearing account data...");
 	accLib_ClearData__(playerid);
+
+	accLib_LogDebug("Fetching the account again");
 	AccLib_FetchAccount(playerid);
+	return 1;
+}
+
+public accLib_HashSetPassword__(playerid,hashid)
+{
+	accLib_LogDebug("Getting hash from previous results...");
+	new string:hash[BCRYPT_HASH_LENGTH];
+	bcrypt_get_hash(hash, sizeof(hash));
+	accLib_LogDebug("Done, the hash is `*********`");
+
+
+	accLib_LogDebug("Preparing race check...");
+	new string:name[MAX_PLAYER_NAME + 1];
+	GetPlayerName(playerid, name, sizeof(name));
+
+	if (!strcmp(name, accLib_g_sAccountName[playerid], .length = MAX_PLAYER_NAME + 1))
+	{
+		accLib_LogDebug("Race check success! (%s == %s)", name, accLib_g_sAccountName[playerid]);
+		accLib_LogDebug("Inserting the data to the database...");
+
+		new string:queryInsertFmt[128];
+		mysql_format(accLib_g_sDbId, queryInsertFmt, sizeof(queryInsertFmt), "UPDATE %s SET %s = '%e' WHERE %s = '%e'",
+			accLib_g_sDbTable,
+			accLib_g_sDbColumnPassword,
+			hash,
+			accLib_g_sDbColumnName,
+			name
+		);
+		
+		accLib_LogDebug("Firing the query now!");
+		mysql_tquery(accLib_g_sDbId, queryInsertFmt);
+	}
+	else
+	{
+		#if defined ACCLIB_AUTO_KICK_ON_ERROR
+			Kick(playerid);
+		#endif
+
+		accLib_LogError("Player %s(%d) race check invalid (%s != %s)", name, playerid, name, accLib_g_sAccountName[playerid]);
+	}
 	return 1;
 }
 
@@ -361,17 +467,10 @@ static accLib_IsValidHandle__(MySQL:db)
 
 static accLib_ClearData__(playerid)
 {
-	new ORM:instance = accLib_g_sAccountInstance[playerid];
-
-	orm_delvar(instance, "id");
-	orm_delvar(instance, "name");
-	orm_delvar(instance, "password");
-
-	accLib_g_sAccountMySQLId[playerid] = 0;
 	MemSet(accLib_g_sAccountName[playerid], EOS, MAX_PLAYER_NAME + 1);
 	MemSet(accLib_g_sAccountPassword[playerid], EOS, BCRYPT_HASH_LENGTH);
 
-	orm_destroy(accLib_g_sAccountName[playerid]);
+	accLib_g_sAccountMySQLId[playerid] = 0;
 	accLib_g_sLoggedIn[playerid] = false;
 	return 1;
 }
