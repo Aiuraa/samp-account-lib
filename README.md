@@ -47,15 +47,15 @@ Right now the project is in development progress, i've spend my time to write th
 
 Feel free to contribute if you can.
 
-- [ ] Core component
+- [x] Core component
   - [x] Data fetching
   - [x] Authentication
   - [x] Register
   - [x] Login Sessions
-  - [ ] Get/Set Account Data
+  - [x] Get/Set Account Data
 
 - [ ] Utils 
-  - [ ] Logging System (partial complete)
+  - [x] Logging System
   - [ ] Documentation (partial complete)
   - [x] Auto fetch/kick player
   - [x] Example Code
