@@ -4,15 +4,16 @@
 	"tag": "0.0.3",
 	"entry": "examples.pwn",
     "output": "gamemodes/examples.amx",
+	"local": true,
     "build": {
         "includes": [
-            "../src/account-lib.inc"
+            "../src"
         ]
     },
 	"dependencies": [
 		"pawn-lang/samp-stdlib",
 		"Sreyas-Sreelal/samp-bcrypt:0.3.4",
-		"pBlueG/SA-MP-MySQL:R41-4"
+		"pBlueG/SA-MP-MySQL:R41-4",
+		"pawn-lang/YSI-Includes@5.x"
 	]
 }
-
